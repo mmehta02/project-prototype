@@ -1,0 +1,150 @@
+---
+title: "data"
+output: html_document
+date: "2024-04-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(rvest)
+library(janitor)
+library(ggplot2)
+```
+
+```{r}
+v1_climate_change = read.csv('climate change.csv')
+v1_pollution = read.csv('pollution.csv')
+v1_human_intrusions = read.csv('human intrusions.csv')
+V1_transportation = read.csv('transportation.csv')
+v1_energy_production = read.csv('energy production and mining.csv')
+```
+
+```{r}
+climate_change <- v1_climate_change[, c("scientificName", "redlistCategory", "yearPublished", "populationTrend", "systems", "realm")]
+
+pollution <- v1_pollution[, c("scientificName", "redlistCategory", "yearPublished", "populationTrend", "systems", "realm")]
+
+human_intrusions <- v1_human_intrusions[, c("scientificName", "redlistCategory", "yearPublished", "populationTrend", "systems", "realm")]
+
+transportation <- V1_transportation[, c("scientificName", "redlistCategory", "yearPublished", "populationTrend", "systems", "realm")]
+
+energy_production <- v1_energy_production[, c("scientificName", "redlistCategory", "yearPublished", "populationTrend", "systems", "realm")]
+```
+
+```{r}
+colnames(climate_change) <- c("Scientific Name", "Red List Category", "Year Published", "Population Trend", "Ecosystem", "Biogeographic Realm")
+
+colnames(pollution) <- c("Scientific Name", "Red List Category", "Year Published", "Population Trend", "Ecosystem", "Biogeographic Realm")
+
+colnames(human_intrusions) <- c("Scientific Name", "Red List Category", "Year Published", "Population Trend", "Ecosystem", "Biogeographic Realm")
+
+colnames(transportation) <- c("Scientific Name", "Red List Category", "Year Published", "Population Trend", "Ecosystem", "Biogeographic Realm")
+
+colnames(energy_production) <- c("Scientific Name", "Red List Category", "Year Published", "Population Trend", "Ecosystem", "Biogeographic Realm")
+
+```
+
+```{r}
+pollution$Ecosystem <- sapply(strsplit(as.character(pollution$Ecosystem), "\\|"), "[", 1)
+pollution$`Biogeographic Realm` <- sapply(strsplit(as.character(pollution$`Biogeographic Realm`), "\\|"), "[", 1)
+pollution$Ecosystem[pollution$Ecosystem == "Freshwater (=Inland waters)"] <- "Freshwater"
+pollution <- na.omit(pollution)
+
+
+climate_change$Ecosystem <- sapply(strsplit(as.character(climate_change$Ecosystem), "\\|"), "[", 1)
+climate_change$`Biogeographic Realm` <- sapply(strsplit(as.character(climate_change$`Biogeographic Realm`), "\\|"), "[", 1)
+climate_change$Ecosystem[climate_change$Ecosystem == "Freshwater (=Inland waters)"] <- "Freshwater"
+climate_change <- na.omit(climate_change)
+
+
+human_intrusions$Ecosystem <- sapply(strsplit(as.character(human_intrusions$Ecosystem), "\\|"), "[", 1)
+human_intrusions$`Biogeographic Realm` <- sapply(strsplit(as.character(human_intrusions$`Biogeographic Realm`), "\\|"), "[", 1)
+human_intrusions$Ecosystem[human_intrusions$Ecosystem == "Freshwater (=Inland waters)"] <- "Freshwater"
+human_intrusions <- na.omit(human_intrusions)
+
+
+transportation$Ecosystem <- sapply(strsplit(as.character(transportation$Ecosystem), "\\|"), "[", 1)
+transportation$`Biogeographic Realm` <- sapply(strsplit(as.character(transportation$`Biogeographic Realm`), "\\|"), "[", 1)
+transportation$Ecosystem[transportation$Ecosystem == "Freshwater (=Inland waters)"] <- "Freshwater"
+transportation <- na.omit(transportation)
+
+
+energy_production$Ecosystem <- sapply(strsplit(as.character(energy_production$Ecosystem), "\\|"), "[", 1)
+energy_production$`Biogeographic Realm` <- sapply(strsplit(as.character(energy_production$`Biogeographic Realm`), "\\|"), "[", 1)
+energy_production$Ecosystem[energy_production$Ecosystem == "Freshwater (=Inland waters)"] <- "Freshwater"
+energy_production <- na.omit(energy_production)
+
+```
+
+```{r}
+unique_values <- unique(energy_production$`Population Trend`)
+
+# Print the unique values
+print(unique_values)
+
+```
+```{r}
+climate_change$Threat <- "Climate Change"
+energy_production$Threat <- "Energy Production"
+human_intrusions$Threat <- "Human Intrusions"
+pollution$Threat <- "Pollution"
+transportation$Threat <- "Transportation"
+```
+
+```{r}
+df <- bind_rows(climate_change, energy_production, human_intrusions, pollution, transportation)
+```
+
+```{r}
+print(df)
+```
+```{r}
+summary(df$`Year Published`)
+
+table(df$`Red List Category`)
+table(df$`Population Trend`)
+table(df$Ecosystem)
+table(df$`Biogeographic Realm`)
+table(df$Threat)
+```
+```{r}
+hist(df$`Year Published`, main = "Distribution of Year Published")
+
+barplot(table(df$`Red List Category`), main = "Red List Category")
+barplot(table(df$`Population Trend`), main = "Population Trend")
+barplot(table(df$Ecosystem), main = "Ecosystem")
+barplot(table(df$`Biogeographic Realm`), main = "Biogeographic Realm")
+barplot(table(df$Threat), main = "Threat")
+```
+```{r}
+colSums(is.na(df))
+```
+```{r}
+category1 <- df[df$`Red List Category` == "Critically Endangered", "Year Published"]
+category2 <- df[df$`Red List Category` == "Least Concern", "Year Published"]
+
+# Perform a t-test
+t_test_result <- t.test(category1, category2)
+
+# Print the result
+print(t_test_result)
+```
+The t-value is -5.7362
+There is a significant different between the menas of these 2 categories. 
+
+```{r}
+lm_model <- lm(`Year Published` ~ `Red List Category` + `Population Trend` + `Ecosystem` + `Biogeographic Realm` + `Threat`, data = df)
+
+# Summary of the model
+summary(lm_model)
+```
+```{r}
+colnames(df) <- c("Scientific_Name", "Red_List_Category", "Year_Published", "Population_Trend", "Ecosystem", "Biogeographic_Realm", "Threat")
+write.csv(df, "df.csv", row.names = FALSE)
+
+```
+
